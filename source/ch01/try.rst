@@ -177,18 +177,97 @@ URIsAok
 MD5
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+这个太常用了,必然的: `md5 - The Go Programming Language <http://golang.org/pkg/crypto/md5/>`_
+
+样例Code::
+
+    h := md5.New()
+    io.WriteString(h, "The fog is getting thicker!")
+    io.WriteString(h, "And Leon's getting laaarger!")
+    fmt.Printf("%x", h.Sum(nil))
+
+Output::
+
+    e2c569be17396eca2a2e3c11578123ed
+
+忒直觉了!
+
+直接抄! ::
+
+    ...
+    h := md5.New()
+    io.WriteString(h, url )
+    c.Infof("sign~\t %v\n", hex.EncodeToString(h.Sum(nil)))
+
+
+齐活!
+
 
 base64
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+老规律,一找一准: `base64 - The Go Programming Language <http://golang.org/pkg/encoding/base64/>`_
+
+只是,文档死活没看明白:
+
+- `func (enc *Encoding) DecodedLen(n int) int` 这儿的 `*Encoding` 从哪儿来的?
+- `func NewEncoder(enc *Encoding, w io.Writer) io.WriteCloser` 看起来是创建编码器的函式,也同样需要 `*Encoding` 类型的实例...
+
+从 `golang-nuts` 搜索出旧讨论的相关代码::
+
+    //for example:
+    package main
+
+    import (
+            "os"
+            "io"
+            "encoding/base64"
+            "strings"
+            )
+
+    func main() {
+            r := base64.NewDecoder(base64.StdEncoding,
+    strings.NewReader("SGV5LCBCaW5nbyEh"))
+            io.Copy(os.Stdout, r)
+
+    } 
+
+- 噢去噢?! 原来文档中::
+
+    Variables
+
+    var StdEncoding = NewEncoding(encodeStd)
+
+        StdEncoding is the standard base64 encoding, as defined in RFC 4648.
+
+    var URLEncoding = NewEncoding(encodeURL)
+
+        URLEncoding is the alternate base64 encoding defined in RFC 4648. It is typically used in URLs and file names.
+
+- 这两变量,就是包内置的专用编码器实例对象!
+- 但是 `io.WriteCloser` 这东西怎么生成的呢?
+- 吼到 中文列表~ `Golang-China`_, 好人提醒::
+
+    dst := make([]byte, 256) 
+    base64.URLEncoding.Encode(dst, []byte(url))
+    c.Infof("base64~\t %v\n", string(dst))
+
+- 打印的日志类似::
+
+    16:24:49 INFO: base64~        aHR0cDovL3NpbmEuY29t
+
+哗! DONE!
+
 
 
 
 外网请求(urlfetch)
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _URL Fetch Go API Overview - Google App Engine — Google Developers: https://developers.google.com/appengine/docs/go/urlfetch/overview
+这种行为有关安全, `GAE`_ 有专用包,不能直接使用 内置 `http` 包里的:
 
-::
+- `URL Fetch Go API Overview <https://developers.google.com/appengine/docs/go/urlfetch/overview>`_
+- 参考样例 ::
 
     import (
         "fmt"
@@ -209,68 +288,240 @@ base64
         fmt.Fprintf(w, "HTTP GET returned status %v", resp.Status)
     }
 
+- 读起来很流畅,只是 最后输出的只是 `resp.Status` 服务器返回状态,俺要的是整个返回数据!
+- 继续追查文档,原来,的确有举例,,, ::
+
+    ...
+    if resp.StatusCode != 200 {
+        http.Error(w, "couldn't get sale data", http.StatusInternalServerError)
+        return
+    }
+    defer resp.Body.Close()
+    parseCSV(resp.Body)
+
+- `resp.Body` 就是! 所以::
+
+
+    resp, err := client.Get("http://open.pc120.com/phish/")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    c.Infof("HTTP GET returned status %v", resp.Status)
+    if resp.StatusCode != 200 {
+        http.Error(w, "couldn't get sale data", http.StatusInternalServerError)
+        return
+    }
+    defer resp.Body.Close()
+    var buf []byte
+    buf, _ = ioutil.ReadAll(resp.Body)
+    c.Infof("resp.Body %v", string(buf))
+
+- 运行日志类似::
+
+
+    16:36:19 INFO: HTTP GET returned status 200 OK
+    16:36:19 INFO: resp.ContentLength 56
+    16:36:19 INFO: resp.Body {"success":0,"errno":-7,"msg":"appkey,q,sign,timestamp"}
+
+- 非常对味儿,因为没有 POST 数据访问时, 金山云是返回错误信息的,当然,是 `JSON`_ 格式
+
 
 JSON 解析
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+好的,最后一个环节了!
 
-type KSC struct {
-        success int  
-        msg     string 
-}
+- 有标准包的: `json - The Go Programming Language <http://golang.org/pkg/encoding/json/>`_
+- 但是,使用时,问题也是最多的,一搜索,到处都是吐糟,,,
+- 而且,杯具的是, go1 的 `json` 包,和以前的接口不一致,旧代码搜索出来无法使用
+- 只好吼中文列表~ `Golang-China`_
+- 再综合多方代码片段,得到::
 
-type KSC struct {
-        Success int    `json:"success"`
-        Msg     string `json:"msg"`
-}
+    ...
+
+    defer resp.Body.Close()
+    var buf []byte
+    buf, _ = ioutil.ReadAll(resp.Body)
+    c.Infof("resp.Body %v", string(buf))
+
+    type KSC struct {
+        Success int     //`json:"success"`
+        Phish   int     //`json:"phish"`
+        Msg     string  //`json:"msg"`
+    }
+    result := &KSC{}
+    err = json.Unmarshal(buf, result)
+    if err != nil {
+        panic(err)
+        //http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 
 
-友情提醒，不论是 encoding 还是 decoding struct 的 field
-都必须首字母大写：
+- 参考: `金山网址云API`_ 文档,明确服务端返回的 `JSON`_ 数据结构
+- 然后 ,先使用 `Go`_ 的结构类型,创建对等的数据结构
+- 最后使用, `func Unmarshal(data []byte, v interface{}) error` 解析就好
+- 这儿唯一纠结的就是结构体的声明 `(~_~)`
 
-否则就会无论如何取不到值……
+    - 在文档的 `func Marshal <http://golang.org/pkg/encoding/json/#Marshal>`_ 部分
+    - 提及了声明结构时,对齐 `JSON`_ 数据的技巧
+    - 如果不认真,或是 E差,绝对不知道以上形式了,,,
 
-json - The Go Programming Language
-http://golang.org/pkg/encoding/json/
-The empty values are false, 0, any nil pointer or interface value, and any array, slice, map, or string of length zero. The object's default key string is the struct field name but can be specified in the struct field's tag value. The "json" key in struct field's tag value is the key name, followed by an optional comma and options. Examples:
+::
 
-// Field is ignored by this package.
-Field int `json:"-"`
+    type KSC struct {
+        Success int     //`json:"success"`
+        ...
 
-// Field appears in JSON as key "myName".
-Field int `json:"myName"`
 
-// Field appears in JSON as key "myName" and
-// the field is omitted from the object if its value is empty,
-// as defined above.
-Field int `json:"myName,omitempty"`
+这里包含一堆约定:
+    - 结构字段名,必须首字母大写,否则,不工作!
+    - 注释中的 `json:"success"` 指出将对应哪个 `JSON`_ 字段
+    - 其实, `Go`_ 结构体字段,不必逐一对齐 `JSON`_ 的,需要使用什么,就声明什么好了
 
-// Field appears in JSON as key "Field" (the default), but
-// the field is skipped if empty.
-// Note the leading comma.
-Field int `json:",omitempty"`
+这里包含的 `Go`_ 哲学:
+    - `表让俺猜!`
+    - 要解析什么数据,事先一定要吼明确
+    - 这样,发生了什么问题,在哪儿有偏差,都在代码中有对应的显然表述!
+    - 不象 `Python`_ 会自动帮忙作很多事儿,开始感觉很方便,但是,一但出问题,就只能直接到内存中追了...
 
-The "string" option signals that a field is stored as JSON inside a JSON-encoded string. This extra level of encoding is sometimes used when communicating with JavaScript programs:
 
-Int64String int64 `json:",string"`
 
-The key name will be used if it's a non-empty string consisting of only Unicode letters, digits, dollar signs, percent signs, hyphens, underscores and slashes.
 
-Map values encode as JSON objects. The map's key type must be string; the object keys are used directly as map keys.
+整个儿的
+------------------------
 
-Pointer values encode as the value pointed to. A nil pointer encodes as the null JSON object.
+其实是完全一一对照原先 `Python`_ 版本的代码
 
-Interface values encode as the value contained in the interface. A nil interface value encodes as the null JSON object.
+::
 
-Channel, complex, and function values cannot be encoded in JSON. Attempting to encode such a value causes Marshal to return an InvalidTypeError.
+    def __genQueryArgs(api_path, url):
+        args = "appkey=" + cfg.APPKEY
+        args += "&q=" + base64.urlsafe_b64encode(url)
+        args += "&timestamp=" + "%.3f" % (time.time())
+        sign_base_string = api_path + "?" + args
+        args += "&sign=" + md5(sign_base_string + cfg.SECRET).hexdigest()
+        return args
 
-JSON cannot represent cyclic data structures and Marshal does not handle them. Passing cyclic structures to Marshal will result in an infinite recursion. 
+    def _askCloud(api_path, url):
+        args = __genQueryArgs(api_path, url)
+        api_url = "http://%s%s?%s"% (cfg.OPEN_HOST, cfg.APITYPE ,args)
+        print api_url
+        result = eval(urilib.urlopen(api_url).read())
+        print result
+        if result['success'] == 1:
+            return result['phish']
+        else:
+            return result
+
+
+进行迁移的而已:
+
+.. code-block:: go
+
+    package urisa
+
+    import (
+        "fmt"
+        "net/http"
+        "time"
+        "strconv"
+        "io"
+        "io/ioutil"
+        "encoding/hex"
+        "encoding/json"
+        "encoding/base64"
+        "crypto/md5"
+        "appengine"
+        "appengine/urlfetch"
+    )
+    
+    // ...
+
+    var APPKEY  = "k-60666"
+    var SECRET  = "99fc9fdbc6761f7d898ad25762407373"
+    var APIHOST = "open.pc120.com"
+    var APITYPE = "/phish/"
+    var PHISHID = map[int] string {
+        -1:   "UNKNOW",
+        0:    "GOOD",
+        1:    "PHISH!",
+        2:    "MAYBE...",
+    }
+    func chk(w http.ResponseWriter, r *http.Request) {
+        c := appengine.NewContext(r)
+        url := r.FormValue("uri")
+
+        dst := make([]byte, 256)
+        base64.URLEncoding.Encode(dst, []byte(url))
+        c.Infof("base64~\t %v\n", string(dst))
+
+        args := "appkey=" + APPKEY
+        args += "&q=" + string(dst)
+        now := time.Now()
+        nano := strconv.FormatInt(now.UnixNano(),10)
+        c.Infof("timestamp ~ %v %v.%v", nano, nano[0:10],nano[10:13])
+        args += "&timestamp=" + nano[0:10] + "." + nano[10:13]
+        sign_base_string := APITYPE + "?" + args 
+        c.Infof("sign_base_string~\t %v\n", sign_base_string)
+        //md5 hash 严格参数顺序:: appkey -> q -> timestamp
+        h := md5.New()
+        io.WriteString(h, sign_base_string + SECRET)
+        args += "&sign=" + hex.EncodeToString(h.Sum(nil))
+        c.Infof("sign~\t %v\n", hex.EncodeToString(h.Sum(nil)))
+        c.Infof("args~\t %v\n", args)
+
+        api_url := "http://"+ APIHOST + APITYPE + "?" + args 
+        c.Infof("api_url~ \n%v", api_url)
+
+        client := urlfetch.Client(c)
+        resp, err := client.Get(api_url)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        c.Infof("HTTP GET returned status %v", resp.Status)
+        if resp.StatusCode != 200 {
+            http.Error(w, "couldn't get sale data", http.StatusInternalServerError)
+            return
+        }
+        defer resp.Body.Close()
+        c.Infof("resp.ContentLength %v", resp.ContentLength)
+        var buf []byte
+        buf, _ = ioutil.ReadAll(resp.Body)
+        c.Infof("resp.Body %v", string(buf))
+
+        type KSC struct {
+            Success int     //`json:"success"`
+            Phish   int     //`json:"phish"`
+            Msg     string  //`json:"msg"`
+        }
+        result := &KSC{}
+        err = json.Unmarshal(buf, result)
+        if err != nil {
+            panic(err)
+            //http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        pishmsg, _ := PHISHID[result.Phish]
+
+        c.Infof("Success:%v \n Phish:%s", result.Success ,pishmsg)
+        fmt.Fprint(w, "/chk(KCS):\t" + pishmsg)
+    }
+
+
+这儿的唯一技巧是:
+
+- `panic(err)` 这将完全的输出錯誤栈,完整的打印錯誤时的运行状态,以便调试!
 
 
 200->400 ?!@#@$!%$#%^5467
-------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-::
+但是! 杯具了! 怎么运行都失败,死也获得不了正确的返回,,,
+
+- 而且詭异的是,日志中出现::
 
     2012/05/11 03:16:00 INFO: HTTP GET returned status 200 OK
     2012/05/11 03:16:00 INFO: resp.ContentLength 173
@@ -283,18 +534,51 @@ JSON cannot represent cyclic data structures and Marshal does not handle them. P
     </html>
 
 
+- 先 200 ,然后输出的页面却是 400 ,这前后两种完全不同的 http 状态,在一个请求中出现?!
+- 使用二分法,逐步缩小可疑代码, 发觉是组装成的查询 url 有问题
+- 不论怎么嘗試, 金山云一直返回类似 `{"success":0,"errno":-7,"msg":"appkey,q,sign,timestamp"}` 的据錯!
+- 但是,打印出来的查詢字串,怎么看和文档中的也完全类似哪...
+
+再次向 中文列表~ `Golang-China`_ 求助
+
+- 好人们建议, 使用专用工具探查,真实的网络访问吧...
+
+于是!
 
 tcpdump
------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+这可是绝对的神器,可以实时的将指定网址的指定范畴的 `TCP`_ 数据包复制为文件,进行静态分析!
+
 ::
 
-    $ tcpdump -ien0 -n -w fixed-get.log  host open.pc120.com
+    $ tcpdump -ien0 -n -w bad-get.log  host open.pc120.com
     tcpdump: listening on en0, link-type EN10MB (Ethernet), capture size 65535 bytes
     ^C
     10 packets captured
     100 packets received by filter
     0 packets dropped by kernel
 
+
+- 在另外的终端运行 `tcpdump`_
+- 然后使用 `cURL`_ 进行正常的测试
+- 回到 `tcpdump`_ 的终端, `Ctrl+c` 终止监听
+- `-w` 指定的文件,就写入了 从 `-i` 参数指定的网卡,对 `host` 参数圈定的目标网地址,进行 `TCP`_ 交互的所有数据!
+
+
+然后,必然的使用 `tcpdump`_ 的过命弟兄:
+
+- `WIRESHARK`_ 这个跨平台网络封包分析软件
+- 对记载下来的数据进行解析,观察
+- 如 :ref:`fig_1_2` 所示
+
+.. _fig_1_2:
+.. figure:: ../_static/figs/tcpdump-bad-get.png
+
+   插图.1-2 使用 `WIRESHARK`_ 解析数据包内容
+
+
+果然!
 
 ::
 
@@ -333,28 +617,61 @@ tcpdump
     0200  2f 61 70 70 65 6e 67 69  6e 65 29 0d 0a 0d 0a      /appengi ne).... 
 
 
+- `&q=` 指代的查询地址, base64 编码异常
+- 多出了很多空白数据!
+- 肯定是 `dst := make([]byte, 256)` 这儿出了问题
+- 分配的是固定长度的二进制数据体
+- 不同的 url 编码后长度不同,没填满的,自然是空白了,,,
+- 所以,必须事先知道,当前的查询 url 被 base64 编码后有多长,才好进行恰当的事先分配!
+- 这个很象 `先有鳮还是先有蛋` 的囧问题吼,,,
+- 居然真的有! `func (enc *Encoding) DecodedLen(n int) int <http://golang.org/pkg/encoding/base64/#Encoding.EncodedLen>`_
 
-27:00" 小结
+所以 ::
+
+    maxEncLen := base64.URLEncoding.EncodedLen(len([]byte(url))) 
+    c.Infof("maxEncLen~\t %v\n", maxEncLen)
+    dst := make([]byte, maxEncLen) 
+    //dst := make([]byte, 256) //<~ 整来的代码,不理解,就一定会出问题...
+    base64.URLEncoding.Encode(dst, []byte(url))
+    c.Infof("base64~\t %v\n", string(dst))
+
+
+再测! 如 :ref:`fig_1_3` 所示
+
+.. _fig_1_3:
+.. figure:: ../_static/figs/tcpdump-fixed-get.png
+
+   插图.1-3 使用 `WIRESHARK`_ 确认实际请求链接
+
+
+的确正当了,,,
+
+于是,整个代码立即依照设想工作了起来!
+
+
+
+
+37:00" 小结
 ---------------------------
 
-以上这一小堆代码,二十分钟,整出来不难吧? 因为,基本上没有涉及太多 `Go`_ 的特殊能力,
+以上这一小堆代码,三十分钟,整出来不难吧? 因为,基本上没有涉及太多 `Go`_ 的特殊能力,
 几乎全部是标准的本地脚本写法儿,想来:
 
-- 其实,关键功能性行为代码,就8行
+- 其实,关键功能性行为代码,就10几行
 
-    - 仅仅有一行,是需要钻研文档的,,,
-
-    - 之前版本文档中,吼关闭了多数对外访问的模块,只能使用 `urllib2`
-    - 但是,没有例子,没有推荐链接,真心一句话,是很需要心灵感应才知道怎么作的..
+    - 多数不用钻研文档的,照抄样例就好
+    - 但是,遇到没有示例代码的包,真心是需要心灵感应才知道怎么作的..
+    - 好在 中文列表~ `Golang-China`_ 非常活跃,任何时候询问,都立即有好人回复的,,,
 
 - 其余,都是力气活儿,而且基本是相同的流程:
 
-    1. 建立容器,分配合理内存
-    1. 处理数据
-    1. 输出到对应容器
+    #. 建立容器,分配合理内存
+    #. 处理数据
+    #. 输出到对应容器
 
 - 其实也都是赋值,赋值,赋值,赋值,,,,
-- 只要注意每一步,随时都可以使用 `print` 吼回来,测试确认无误,就可以继续前进了,,,
+- 只要注意每一步,随时都可以使用 `c.Infof()` 吼回来,测试确认无误,就可以继续前进了,,,
 
-`这就是脚本语言的直觉式开发调试体验!`
+
+`这就是脚本式直觉开发调试体验!`
 

@@ -20,8 +20,6 @@ ps:
 
 `app.yaml` 修订版本号::
 
-.. code-block:: yaml
-
     application: urisago1
     version: 2
     runtime: go
@@ -30,6 +28,7 @@ ps:
     handlers:
     - url: /.*
       script: _go_app
+
 
 
 - 再进行 `appcfg.py update ` 时,会自动部署为对应版本
@@ -44,5 +43,5 @@ ps:
 .. _fig_1_v:
 .. figure:: ../_static/figs/ch1-deploy-versions.png
 
-   插图.1-? 在 `GAE`_ 后台指定默认应用版本
+   插图.1-4 在 `GAE`_ 后台指定默认应用版本
 

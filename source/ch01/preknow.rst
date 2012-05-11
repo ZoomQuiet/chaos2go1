@@ -28,6 +28,7 @@
         - `GoCourseDay2.pdf <http://go.googlecode.com/hg-history/release-branch.r60/doc/GoCourseDay2.pdf>`_
         - `GoCourseDay3.pdf <http://go.googlecode.com/hg-history/release-branch.r60/doc/GoCourseDay3.pdf>`_
 
+    - `《学习Go语言》中文版 <http://www.mikespook.com/learning-go/>`_ ~ 刚刚在120428 释放的最新版本!
     - `Go`_ 中国达人 `Fango 的精彩翻译 <http://code.google.com/p/ac-me/downloads/list>`_
 
         - `胡文 Go.ogle <http://ac-me.googlecode.com/files/go.ogle.pdf>`_ ~ 最快乐的 `Go`_ 体验小说
@@ -145,3 +146,5 @@ Go 精粹
     - 并且返回一个函数，他有两个整数参数并返回一个整数  
 
 这样,思想和书写统一,少了很多转化,舒服很多 ;-)
+
+

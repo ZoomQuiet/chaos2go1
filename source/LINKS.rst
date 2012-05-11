@@ -18,6 +18,7 @@
 .. _PHISH: http://zh.wikipedia.org/zh/%E9%92%93%E9%B1%BC%E5%BC%8F%E6%94%BB%E5%87%BB
 .. _金山网址云API: http://code.ijinshan.com/api/devmore4.html#md1
 
+.. _Golang-China: http://groups.google.com/group/golang-china
 .. _Gmail: http://zh.wikipedia.org/wiki/Gmail
 .. _GAE: http://zh.wikipedia.org/wiki/GAE
 .. _开始Go: https://developers.google.com/appengine/docs/go/gettingstarted/
@@ -44,6 +45,10 @@
 
 .. _PaaS: http://zh.wikipedia.org/wiki/PaaS
 .. _REST: http://zh.wikipedia.org/wiki/REST
+.. _TCP: http://zh.wikipedia.org/wiki/%E4%BC%A0%E8%BE%93%E6%8E%A7%E5%88%B6%E5%8D%8F%E8%AE%AE
+.. _tcpdump: http://zh.wikipedia.org/wiki/Tcpdump
+.. _WIRESHARK: http://zh.wikipedia.org/wiki/Wireshark
+
 .. _JSON: http://zh.wikipedia.org/wiki/JSON
 
 .. _Python: http://python.org

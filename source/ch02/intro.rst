@@ -3,9 +3,12 @@
 
 好了,已经完成了预期的 :
 
-- 用起 `SAE`_ 
+- 在 `GAE`_ 用起 `Go`_
 - 包装 `金山网址云安全开放API <http://code.ijinshan.com/api/devmore4.html#md1>`_ 为 `REST`_ 服务
-- 只要 `curl -d "uri=http://sina.com" urisaok.sinaapp.com/chk/` 即可返回,金山云的数据!
+- 只要类似:
+
+    - `$ curl -d "uri=http://sina.com" urisago1.appsp0t.com/chk` 
+    - 即可返回指定网址是否安全,从金山云返回数据!
 
 
 .. sidebar:: 推荐
