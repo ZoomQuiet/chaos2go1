@@ -161,9 +161,116 @@
 但是!
 ^^^^^^^^^^^^^^^^^^^
 
-`gae datastore get , return value is wrong.. - golang-nuts <http://groups.google.com/group/golang-nuts/browse_thread/thread/996aa7e83aa29fde/f73e109d94735a00?show_docid=f73e109d94735a00>`_
+例程的逻辑是:
+
+- 先填好一个结构数据体,并使用 `datastore.NewIncompleteKey` 生成鍵值
+- 然后塞到 `Datastore` 中
+- 最后使用之前的 鍵值 从 `Datastore` 取回数据
+
+然而,俺进行的逻辑是:
+
+- 先从 `Datastore` 尝试是否有对应数据
+- 如果没有, 从 金山云 查询到结果, 组成结构体, 再塞入  `Datastore` 
+
+问题就在:
+
+- 如何根据指定的条件, 生成合理的  `Datastore` 鍵值来进行查询?!
+- 明显的,  `Datastore` 不是 `Python`_ 的字典,也不是 `Go`_ 的 `map` 其值对的 键值 不是由用户人指定的数据,而是对分布式管理有帮助的 唯一 hash 值....
 
 
+先蒙一下...
+
+.. code-block:: go
+
+    // ...
+    func qchk(w http.ResponseWriter, r *http.Request) {
+        c := appengine.NewContext(r)
+        url := r.FormValue("uri")
+
+        ukey := datastore.NewKey(c, "Uri", url, 0, nil)
+        var e2 Chked
+        if err := datastore.Get(c, ukey, &e2); err != nil {
+            fmt.Fprint(w, "~ ", err.Error() , "\n")
+            c.Infof("Get Err.~\n\t !!! %v", err.Error())
+            api_url := _genKSCuri(url)
+            _,p := _asKSC(api_url, r)
+            c.Infof("Success:%v \t Phish:%s", s ,PHISHID[p])
+
+            e1 := Chked{
+                Uri:    url,
+                Phish:  p,
+                Tstamp: time.Now(),
+                Cip:    r.RemoteAddr,
+            }
+            key, err := datastore.Put(c, datastore.NewIncompleteKey(c, "chked", nil), &e1)
+
+            if err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+            c.Infof("datastore key=%v", key.String())
+            fmt.Fprint(w, "/qchk(KCS):\t" + PHISHID[p])
+        }else{
+        //...
+    
+
+- 使用文档中抄来的 
+- `func NewKey(c appengine.Context, kind, stringID string, intID int64, parent *Key) *Key` 
+- 通过结构数据中指定值对为条件,生成 鍵值,尝试查询
+
+    - `The datastore package - Google App Engine — Google Developers <https://developers.google.com/appengine/docs/go/datastore/reference>`_
+
+- 然后,使用例程中的 
+- `func NewIncompleteKey(c appengine.Context, kind string, parent *Key) *Key` 
+- 生成新值对的鍵!
+
+    - 这里纠结的是其中的 `kind string` 类别参数?!
+    - 理解,应该是类似 `MongoDB`_ 中的不同 数据库的名称
+    - 即,可以根据 类型,将不同的数据值对,放到指定的 `类别` 存储中
+    - 但是, `datastore.NewKey` 时,可没有这参数吼?!
+
+
+一运行才发现,不論怎么尝试,永远:
+
+- 日志输出: `~ datastore: no such entity`
+- 但是,从 `http://localhost:8080/_ah/admin/` `GAE`_ 的 SDK 提供的本地管理界面中
+- 如 :ref:`fig_2_1` 所示
+
+.. _fig_2_1:
+.. figure:: ../_static/figs/ch2-adtaview.png
+
+   插图.2-1 本地的Datastore Viewer界面
+
+
+- 数据的确塞入了 `Datastore` 
+- 但是! 相同的数据, 鍵值都不相同!!
+
+
+
+
+
+.. note:: PS:
+
+    - 当然的, `GAE`_ 的实际运行服务管理后台,也提供了相同的数据观察入口
+    - 只是界面更加精致而已
+    - 如 :ref:`fig_2_2` 所示
+
+
+.. _fig_2_2:
+.. figure:: ../_static/figs/gae-dstore-view.png
+
+   插图.2-2 GAE的Datastore Viewer界面
+
+
+
+
+鍵要统一!
+^^^^^^^^^^^^^^^^^^^
+
+怎么办呢!?
+
+- 尝试搜索
+- 见到: `gae datastore get , return value is wrong.. - golang-nuts <http://groups.google.com/group/golang-nuts/browse_thread/thread/996aa7e83aa29fde/f73e109d94735a00?show_docid=f73e109d94735a00>`_
 
 
 .. code-block:: go
@@ -191,12 +298,63 @@
     } 
 
 
-.. _fig_1_0:
-.. figure:: ../_static/figs/120427-golang-nuts.png
+- 嗯嗯嗯?! 这 `datastore.NewKey()` 生成的鍵是可以直接应用在 `datastore.Get()` 中的哪?!
 
-   插图.1-0 `golang-nuts <http://groups.google.com/group/golang-nuts>`_ 官方主力列表
+
+
+.. code-block:: go
+
+    // ...
+    func qchk(w http.ResponseWriter, r *http.Request) {
+        c := appengine.NewContext(r)
+        url := r.FormValue("uri")
+
+        ukey := datastore.NewKey(c, "Uri", url, 0, nil)
+        var e2 Chked
+        if err := datastore.Get(c, ukey, &e2); err != nil {
+            fmt.Fprint(w, "~ ", err.Error() , "\n")
+            c.Infof("Get Err.~\n\t !!! %v", err.Error())
+            api_url := _genKSCuri(url)
+            _,p := _asKSC(api_url, r)
+            c.Infof("Success:%v \t Phish:%s", s ,PHISHID[p])
+
+            e1 := Chked{
+                Uri:    url,
+                Phish:  p,
+                Tstamp: time.Now(),
+                Cip:    r.RemoteAddr,
+            }
+            //key, err = datastore.Put(c, datastore.NewIncompleteKey(c, "chked", nil), &e1)
+            ukey, err = datastore.Put(c, ukey, &e1)
+            if err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+            //c.Infof("datastore key=%v", key.String())
+            fmt.Fprint(w, "ask KCS API srv.\n")
+            fmt.Fprint(w, "/qchk(KCS):\t" + PHISHID[p])
+        }else{
+        //...
+
+
+就修改两行!    
+
+
+::
+
+    $ curl -d "uri=http://sina.com" localhost:8080/qchk
+    ~ datastore: no such entity
+    ask KCS API srv.
+    /qchk(KCS):     好站
+    
+    $ curl -d "uri=http://sina.com" localhost:8080/qchk
+    datastore Get OK;-) 
+    /qchk(GAE):     好站
+
+
 
 **BINGO!**
+
 
 
 

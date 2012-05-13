@@ -67,6 +67,7 @@
 
 .. _agentzh: http://agentzh.org/
 .. _Lua: http://en.wikipedia.org/wiki/Lua_%28programming_language%29
+.. _MongoDB: http://www.mongodb.org/
 
 .. _reSTsections: http://sphinx.pocoo.org/rest.html#sections
 

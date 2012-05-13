@@ -6,31 +6,40 @@
 
 最终,完成所有功能的配置和代码:
 
-- 版本仓库: https://bitbucket.org/ZoomQuiet/ok.urisa
-- 应用发布: http://urisaok.sinaapp.com/    
-- 相关视频: 
-
-    - `{12月29日语音讲座vol.38}ZQ: SAE云安全初步 <http://bbs.code.ijinshan.com/thread-1537-1-2.html>`_
-    - `{1月12日语音讲座vol.39}ZQ: SAE云安全小改 <http://bbs.code.ijinshan.com/thread-1547-1-2.html>`_
-    - `{4月26日语音讲座vol.51}ZQ: 网址云由KVDB在SAE加速 <http://bbs.code.ijinshan.com/thread-1887-1-1.html>`_
+- 版本仓库: https://github.com/ZoomQuiet/urisaok/tree/GAE
+- 应用发布: urisago1.appsp0t.com/
 
 
 
-config.yaml
+app.yaml
 ---------------
 
 ::
 
-    ---
-    name: urisaok
-    version: 2
-    ...
+    application: urisago1
+    version: 3
+    runtime: go
+    api_version: go1
+
+    handlers:
+    - url: /.*
+      script: _go_app
 
 
-index.wsgi
+
+urisa.go
 ---------------
 
-.. literalinclude:: index.wsgi
-    :language: python
+.. literalinclude:: urisa.go
+    :language: go
     :linenos:
 
+
+
+以上!
+---------------
+
+从0基础开始, 以确切的任务为目标, 专注尝试, `42`_ 分钟,在 `Go`_ 简洁而强大的表述帮助,
+以及 `GAE`_ 完备的本地调试环境为基础,真心可以完成可用的服务,并实时发布到互联网中吼!!!
+
+接下来?! 当然的继续折腾,享受 `Go`_ ~ 互联网时代的 `C` 语言哪! 
