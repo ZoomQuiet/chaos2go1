@@ -28,15 +28,6 @@ img {
     border:0px;
 }
 
-cite {
-    font-style : italic;
-    font-size : 105%;
-    background-color: #efefef;
-    white-space : pre;
-    letter-spacing: 1px;
-}
-
-
 /* :::: LAYOUT :::: */
 
 blockquote.epigraph {
@@ -94,9 +85,9 @@ div.logo {
 div.relnav{
     margin: 0 ;
     padding: 10px 4px 10px 4px;
-    background-color: #ffffff;
-    border:3px solid #777;
-    border-radius: 0px 15px 15px 15px;
+    background-color: #fbfbee;
+    border:4px solid #ABABAB;
+    border-radius: 0px 15px 0px 15px;
     box-shadow: 3px 3px 4px #ddd;
 }
 div.relnav sup,sub{
@@ -133,7 +124,7 @@ div.footercnt {
     margin: 1em 0 0 0 ;
     padding: 10px 5px 10px 5px;
     background-color: #fbfbee;
-    border:3px solid #777;
+    border:4px solid #ABABAB;
     border-radius: 0px 15px 15px 15px;
     box-shadow: 3px 3px 4px #ddd;
 }
@@ -143,7 +134,7 @@ div.footercnt div.rel{
 }
 
 div.rel sup,sub{
-    font-size:9px;
+    font-size:8px;
 }
 
 div.footer{

@@ -5,7 +5,7 @@
     - 去除了 window.resize 事件
     - 去除 仿google code 文档的侧栏切换
  */
-DESELEMENT = "h1,h2,h3,h4,.highlight-python,.figure";//"h1,h2,h3,h4,ul,div.section p,div.highlight-python";
+DESELEMENT = "h1,h2,h3,h4,.highlight-python";//"h1,h2,h3,h4,ul,div.section p,div.highlight-python";
 
 function clean_tag(st){
     return st.replace(/<[^>]+>?[^<]*>/g, '');
@@ -37,9 +37,9 @@ $(document).ready(function(){
             //091117:Zoomq change comment aim
             //$(this).attr("href", "https://groups.google.com/group/obp-comment/post?hl=zh-CN&subject="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body));
             //$(this).attr("href", "https://bitbucket.org/ZoomQuiet/obp.rwiwpyzh/issues/new");
-            //$(this).attr("href", "http://code.google.com/p/openbookproject/issues/entry?template=User%20defect%20report&summary={RWIwPy}"+encodeURIComponent(sub)+"+"+encodeURIComponent(body));
-            $(this).attr("href"
-                , "https://github.com/ZoomQuiet/chaos2go1/issues/new?title={chaos2go1}"+encodeURIComponent(sub));
+            //$(this).attr("href", "http://code.google.com/p/the-art-of-community-chinese-translation/issues/entry?template=User%20defect%20report&summary={TAoCzh}"+encodeURIComponent(sub)+"+"+encodeURIComponent(body));
+            $(this).attr("href", "https://bitbucket.org/ZoomQuiet/the-art-of-community-zh/issues/new");
+            
             $(this).attr("target", "_blank");
         }
     }, function(){
