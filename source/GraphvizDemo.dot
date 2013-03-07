@@ -1,0 +1,9 @@
+digraph GraphvizDemo{
+        node [fontname="Yahei Mono" shape="rect"];
+        edge [fontname="Yahei Mono" fontsize=10];
+
+        node1[label="start"];
+        node2[label="norm."];
+
+        node1->node2[label="testing"];
+    }
