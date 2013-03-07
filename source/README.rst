@@ -14,6 +14,7 @@ Shinx 说明
         - http://code.google.com/p/pymotwcn/wiki/SphinxprojectHowto
 
 
+`\`code\`_`
 
 本书行文体例
 --------------------------------------------------------------------
@@ -129,12 +130,84 @@ Shinx 说明
 - 追随正文
 - 活动説明
 - 效果如右
-- ....
+- 是也乎....
 
 
 
 rST排版技巧
 -------------
+
+
+Graphviz 图谱支持
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+对于复杂的关系图谱,使用 Graphviz 提供的 dot 脚本是最舒服自然的了,
+rST 当然支持!
+只要:
+
+- 在配置中::
+
+    extensions = ['sphinx.ext.graphviz'
+        ...
+        ]
+
+
+- 在Makefile 脚本中配置::
+
+    SPHINXBUILD   = sphinx-build -D graphviz_dot=/usr/local/Cellar/graphviz/2.28.0/bin/dot
+
+
+
+然后就可以使用 `graphviz::` 块进行声明,完成图谱的自动生成了!
+
+
+.. graphviz:: GraphvizDemo.dot
+
+
+LaTex公式支持
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+对于复杂的数学公式,当然是 LaTeX 支持的最优美,
+想在网页中完备支持,以是可以的,
+只要:
+
+- 在配置中::
+
+    extensions = ['sphinx.ext.mathjax'
+        ...
+        ]
+    mathjax_url = ('http://cdn.mathjax.org/mathjax/latest/MathJax.js?'
+                       'config=TeX-AMS-MML_HTMLorMML')
+
+
+
+然后就可以使用 `math::` 块进行声明,完成页面的动态公式生成了!
+
+例如::
+
+    .. math::
+       f(V_{in}, S_{low}, S_{high}, H) =
+       \begin{cases}
+               1 & V_{in} \le S_{low} - H \\
+               0 & V_{in} \ge S_{high} + H
+       \end{cases}
+       :label: equation_9_3
+
+
+效果:
+
+
+.. math::
+   f(V_{in}, S_{low}, S_{high}, H) =
+   \begin{cases}
+           1 & V_{in} \le S_{low} - H \\
+           0 & V_{in} \ge S_{high} + H
+   \end{cases}
+   :label: equation_9_3
+
+
+
 
 跨章节指引
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -148,10 +221,10 @@ rST排版技巧
 
   各个章节的首页一般是 index.rst
   头一行,习惯性加个聲明:
-  .. _chapter2index:
+  .. _chapter6index:
 
   那么,在其它任意文本中,随时可以使用:
-  :ref:`基本电子学 <chapter2index>` 
+  :ref:`构建 buzz <chapter6index>` 
   来生成一个指向第二章 首页的链接!
 
 
@@ -166,20 +239,21 @@ rST排版技巧
 
 ::
 
-  .. _fig_2_4:
-  .. figure:: _static/figs/tmux-curl-test.png
+  .. _fig_0601:
+  .. figure:: _static/figs/taoc-6-1.png
 
-     插图 2-4 命令行测试情景
-
-
-然后,就可以在任意地方使用 :ref:`fig_2_4` 来指代,
-实际输出的就是 "插图 2-4 命令行测试情景"
+     插图 6-1 神奇的5
 
 
-.. _fig_2_4:
-.. figure:: _static/figs/tmux-curl-test.png
+然后,就可以在任意地方使用 :ref:`fig_0601` 来指代,
+实际输出的就是...
 
-   插图 2-4 命令行测试情景
+
+.. _fig_0601:
+.. figure:: _static/figs/taoc-6-1.png
+
+   插图 6-1 神奇的5
+
 
 
 上下标号
@@ -220,9 +294,10 @@ E = mc\ :sup:`2`
 
 
 
-所以,使用列表也可以方便的生成表格::
+所以,使用列表也可以方便的生成表格(注意,也同时可以使用全局定义,来简化正文中的引用)::
 
-    .. list-table:: 实例
+    .. _table_0601:
+    .. list-table:: 表格6.1 实例
        :widths: 15 10 30
        :header-rows: 1
 
@@ -243,8 +318,10 @@ E = mc\ :sup:`2`
 
 **效果**
 
+是也乎,是也乎 :ref:`table_601` 正文出现,,,
 
-.. list-table:: 实例
+.. _table_0601:
+.. list-table:: 表格6.1 实例
    :widths: 15 10 30
    :header-rows: 1
 
@@ -319,9 +396,6 @@ E = mc\ :sup:`2`
 
 三级标题
 """""""""""""""""""""""
-
-
-
 
 
 
